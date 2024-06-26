@@ -1,85 +1,83 @@
-using System;
+using CalDAV.NET.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using CalDAV.NET.Extensions;
 
-namespace CalDAV.NET.Internal
+namespace CalDAV.NET.Internal;
+
+internal class ResourceResponse : Response
 {
-    internal class ResourceResponse : Response
+    public IReadOnlyCollection<Resource> Resources { get; private set; }
+
+    public ResourceResponse()
     {
-        public IReadOnlyCollection<Resource> Resources { get; private set; }
+        Resources = new List<Resource>();
+    }
 
-        public ResourceResponse()
+    public ResourceResponse(string method, int statusCode, IReadOnlyCollection<Resource> resources) : base(method, statusCode)
+    {
+        Resources = resources;
+    }
+
+    public override async Task ParseAsync(HttpResponseMessage message)
+    {
+        await base.ParseAsync(message);
+
+        var data = await message.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+        var content = GetEncoding(message.Content, Encoding.UTF8).GetString(data, 0, data.Length);
+
+        if (TryParseDocument(content, out var document) == false || document.Root == null)
         {
-            Resources = new List<Resource>();
+            return;
         }
 
-        public ResourceResponse(string method, int statusCode, IReadOnlyCollection<Resource> resources) : base(method, statusCode)
-        {
-            Resources = resources;
-        }
+        Resources = document.Root
+            .LocalNameElements("response")
+            .Select(ParseResource)
+            .ToList();
+    }
 
-        public override async Task ParseAsync(HttpResponseMessage message)
-        {
-            await base.ParseAsync(message);
+    private static Resource ParseResource(XElement element)
+    {
+        var uri = element.LocalNameElement("href")?.Value;
+        var status = element.LocalNameElement("status")?.Value;
 
-            var data = await message.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-            var content = GetEncoding(message.Content, Encoding.UTF8).GetString(data, 0, data.Length);
-
-            if (TryParseDocument(content, out var document) == false || document.Root == null)
+        var properties = element
+            .LocalNameElements("propstat")
+            .Where(x =>
             {
-                return;
-            }
+                var statusCode = x.GetStatusCode();
 
-            Resources = document.Root
-                .LocalNameElements("response")
-                .Select(ParseResource)
-                .ToList();
-        }
+                return statusCode >= 200 && statusCode <= 299;
+            })
+            .SelectMany(x => x.LocalNameElements("prop").Elements())
+            .Select(x => new KeyValuePair<XName, string>(x.Name, x.GetInnerXml()))
+            .ToDictionary(x => x.Key, x => x.Value);
 
-        private static Resource ParseResource(XElement element)
+        return new Resource
         {
-            var uri = element.LocalNameElement("href")?.Value;
-            var status = element.LocalNameElement("status")?.Value;
+            Uri = uri,
+            Status = status,
+            Properties = properties
+        };
+    }
 
-            var properties = element
-                .LocalNameElements("propstat")
-                .Where(x =>
-                {
-                    var statusCode = x.GetStatusCode();
-
-                    return statusCode >= 200 && statusCode <= 299;
-                })
-                .SelectMany(x => x.LocalNameElements("prop").Elements())
-                .Select(x => new KeyValuePair<XName, string>(x.Name, x.GetInnerXml()))
-                .ToDictionary(x => x.Key, x => x.Value);
-
-            return new Resource
-            {
-                Uri = uri,
-                Status = status,
-                Properties = properties
-            };
-        }
-
-        private static bool TryParseDocument(string text, out XDocument document)
+    private static bool TryParseDocument(string text, out XDocument document)
+    {
+        try
         {
-            try
-            {
-                document = XDocument.Parse(text);
+            document = XDocument.Parse(text);
 
-                return true;
-            }
-            catch
-            {
-                document = null;
-            }
-
-            return false;
+            return true;
         }
+        catch
+        {
+            document = null;
+        }
+
+        return false;
     }
 }

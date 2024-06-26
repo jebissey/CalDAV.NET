@@ -11,7 +11,7 @@
     <Authors>MarkAtk</Authors>
     <Title>CalDAV.NET</Title>
     <Description>CalDAV .NET client library</Description>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <Version>1.0.0.0</Version>
   </PropertyGroup>
   <ItemGroup>

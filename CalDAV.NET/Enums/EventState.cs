@@ -1,10 +1,9 @@
-namespace CalDAV.NET.Enums
+namespace CalDAV.NET.Enums;
+
+public enum EventState
 {
-    public enum EventState
-    {
-        None,
-        Created,
-        Deleted,
-        Changed
-    }
+    None,
+    Created,
+    Deleted,
+    Changed
 }

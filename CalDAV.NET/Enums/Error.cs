@@ -1,10 +1,9 @@
-namespace CalDAV.NET.Enums
+namespace CalDAV.NET.Enums;
+
+public enum Error
 {
-    public enum Error
-    {
-        None,
-        UpdatingEventFailed,
-        CreatingEventFailed,
-        DeletingEventFailed
-    }
+    None,
+    UpdatingEventFailed,
+    CreatingEventFailed,
+    DeletingEventFailed
 }

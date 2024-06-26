@@ -1,10 +1,9 @@
 using CommandLine;
 
-namespace CalDAV.NET.Example.Options
+namespace CalDAV.NET.Example.Options;
+
+public abstract class EventOptions : CalendarOptions
 {
-    public abstract class EventOptions : CalendarOptions
-    {
-        [Value(0, MetaName = "event", Required = true)]
-        public string Event { get; set; }
-    }
+    [Value(0, MetaName = "event", Required = true)]
+    public string Event { get; set; }
 }

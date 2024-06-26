@@ -1,38 +1,37 @@
-using CalDAV.NET.Interfaces;
 using CalDAV.NET.Enums;
+using CalDAV.NET.Interfaces;
 
-namespace CalDAV.NET
+namespace CalDAV.NET;
+
+public class SaveChangesStatus
 {
-    public class SaveChangesStatus
+    public string Message { get; }
+    public Error Error { get; }
+    public IEvent Event { get; }
+
+    internal SaveChangesStatus(Error error, IEvent calendarEvent)
     {
-        public string Message { get; }
-        public Error Error { get; }
-        public IEvent Event { get; }
+        // TODO: Add internal error
+        Error = error;
+        Event = calendarEvent;
+        Message = GetMessage(error);
+    }
 
-        internal SaveChangesStatus(Error error, IEvent calendarEvent)
+    private string GetMessage(Error error)
+    {
+        switch (error)
         {
-            // TODO: Add internal error
-            Error = error;
-            Event = calendarEvent;
-            Message = GetMessage(error);
+            case Error.CreatingEventFailed:
+                return "Calendar event could not be created";
+
+            case Error.DeletingEventFailed:
+                return "Calendar event could not be deleted";
+
+            case Error.UpdatingEventFailed:
+                return "Calendar event could not be updated";
+
+            default:
+                return "";
         }
-
-        private string GetMessage(Error error)
-        {
-            switch (error)
-            {
-                case Error.CreatingEventFailed:
-                    return "Calendar event could not be created";
-
-                case Error.DeletingEventFailed:
-                    return "Calendar event could not be deleted";
-
-                case Error.UpdatingEventFailed:
-                    return "Calendar event could not be updated";
-
-                default:
-                    return "";
-            }
-        }
-}
+    }
 }
